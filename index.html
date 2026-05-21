@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Ventilation Valve Effect — Kallol Chakrabarti</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Space+Mono:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090b10;
+    --bg2: #0e1118;
+    --bg3: #131720;
+    --accent: #e8c96d;
+    --accent2: #c0392b;
+    --accent3: #2ecc71;
+    --text: #d4d8e2;
+    --muted: #5a6070;
+    --border: #1e2430;
+    --glow: rgba(232,201,109,0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    line-height: 1.8;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.18s ease;
+    opacity: 0.5;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 8vw 10vw 6vw;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,201,109,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,201,109,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridDrift 40s linear infinite;
+  }
+  @keyframes gridDrift {
+    from { background-position: 0 0; }
+    to { background-position: 60px 60px; }
+  }
+
+  .hero-orb {
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,201,109,0.06) 0%, transparent 70%);
+    top: -200px; right: -200px;
+    animation: orbPulse 8s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes orbPulse {
+    from { transform: scale(1); opacity: 0.6; }
+    to { transform: scale(1.15); opacity: 1; }
+  }
+
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 7vw, 7rem);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    max-width: 14ch;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.4s forwards;
+  }
+
+  .hero h1 .highlight {
+    color: var(--accent);
+    font-style: italic;
+    position: relative;
+    display: inline-block;
+  }
+  .hero h1 .highlight::after {
+    content: '';
+    position: absolute;
+    bottom: 4px; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    animation: underlineGrow 1s 1.4s forwards;
+  }
+  @keyframes underlineGrow { to { transform: scaleX(1); } }
+
+  .hero-sub {
+    font-size: clamp(1rem, 1.8vw, 1.3rem);
+    font-style: italic;
+    color: var(--muted);
+    max-width: 55ch;
+    margin-top: 2rem;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.7s forwards;
+  }
+
+  .hero-meta {
+    margin-top: 3.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.9s 1s forwards;
+  }
+  .hero-meta .author {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--text);
+  }
+  .hero-meta .author span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.65rem;
+    margin-top: 2px;
+  }
+  .divider-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 12px;
+    text-transform: uppercase;
+    border-radius: 2px;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 3rem;
+    left: 10vw;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    opacity: 0;
+    animation: fadeIn 1s 1.8s forwards;
+  }
+  .scroll-hint span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 60px; height: 1px;
+    background: var(--muted);
+    position: relative;
+    overflow: hidden;
+  }
+  .scroll-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    animation: scanLine 2s ease-in-out infinite;
+  }
+  @keyframes scanLine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  /* ── SECTION LAYOUT ── */
+  .section {
+    padding: 8vw 10vw;
+    border-top: 1px solid var(--border);
+    position: relative;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .section-label::before {
+    content: '';
+    width: 30px; height: 1px;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 4vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 2.5rem;
+    max-width: 22ch;
+  }
+
+  /* ── MANIFESTO BLOCK ── */
+  .manifesto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4vw;
+    align-items: start;
+  }
+  @media (max-width: 768px) { .manifesto-grid { grid-template-columns: 1fr; } }
+
+  .manifesto-body p {
+    color: var(--text);
+    font-size: 1.15rem;
+    margin-bottom: 1.4rem;
+    font-weight: 300;
+  }
+
+  .pull-quote {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.2rem, 2.5vw, 1.9rem);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--accent);
+    border-left: 3px solid var(--accent);
+    padding-left: 2rem;
+    position: sticky;
+    top: 4rem;
+  }
+
+  /* ── STEAM ENGINE DIAGRAM ── */
+  .diagram-wrapper {
+    margin: 4rem 0;
+    position: relative;
+  }
+
+  .steam-diagram {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    display: block;
+  }
+
+  /* ── 4-LAYER STACK ── */
+  .layers-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 800px;
+    margin: 3rem auto;
+  }
+
+  .layer-card {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    align-items: stretch;
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: all 0.5s ease;
+    position: relative;
+  }
+  .layer-card.visible { opacity: 1; transform: translateX(0); }
+
+  .layer-num {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .layer-num-inner {
+    width: 38px; height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    flex-shrink: 0;
+    background: var(--bg);
+    z-index: 2;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  .layer-card:hover .layer-num-inner {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--glow);
+  }
+  .layer-line {
+    width: 1px;
+    background: var(--border);
+    flex: 1;
+    margin: 0 auto;
+  }
+  .layer-card:last-child .layer-line { display: none; }
+
+  .layer-content {
+    padding: 0 0 3rem 2rem;
+  }
+  .layer-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .layer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.7rem;
+  }
+  .layer-body {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .layer-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.hot { border-color: rgba(232,201,109,0.4); color: var(--accent); }
+
+  /* ── EQUATION ── */
+  .equation-section {
+    background: var(--bg2);
+  }
+
+  .equation-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+    padding: 4rem 0;
+  }
+  .eq-side {
+    text-align: center;
+  }
+  .eq-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+  .eq-value {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.4rem, 3vw, 2.5rem);
+    font-style: italic;
+    color: var(--text);
+  }
+  .eq-op {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    color: var(--accent);
+    opacity: 0.6;
+  }
+  .eq-result .eq-value { color: var(--accent); }
+
+  .pce-card {
+    margin: 2rem auto 0;
+    max-width: 600px;
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+    background: var(--bg3);
+    position: relative;
+    overflow: hidden;
+  }
+  .pce-card::before {
+    content: 'PCE';
+    position: absolute;
+    top: -10px; right: 2rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 8rem;
+    font-weight: 900;
+    color: var(--accent);
+    opacity: 0.04;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .pce-fraction {
+    text-align: center;
+    margin: 1rem 0;
+  }
+  .pce-num, .pce-den {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    display: block;
+    padding: 0.3rem 0;
+  }
+  .pce-bar {
+    width: 80%;
+    height: 1px;
+    background: var(--accent);
+    margin: 0 auto;
+  }
+  .pce-states {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  .pce-state {
+    padding: 1rem;
+    border: 1px solid var(--border);
+  }
+  .pce-state-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .pce-state-body { font-size: 0.9rem; color: var(--muted); }
+
+  /* ── PARADOX TABLE ── */
+  .paradox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin: 3rem 0;
+    background: var(--border);
+  }
+  @media (max-width: 600px) { .paradox-grid { grid-template-columns: 1fr; } }
+
+  .paradox-cell {
+    padding: 2.5rem;
+    background: var(--bg2);
+    transition: background 0.3s;
+  }
+  .paradox-cell:hover { background: var(--bg3); }
+
+  .paradox-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .paradox-label.old { color: var(--accent2); }
+  .paradox-label.new { color: var(--accent3); }
+
+  .paradox-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-style: italic;
+  }
+  .flow-arrow {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  /* ── IMPLICATIONS ── */
+  .impl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px;
+    background: var(--border);
+    margin: 3rem 0;
+  }
+  .impl-card {
+    padding: 2.5rem;
+    background: var(--bg2);
+    transition: background 0.3s, transform 0.3s;
+    cursor: default;
+  }
+  .impl-card:hover { background: var(--bg3); }
+
+  .impl-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--border);
+    line-height: 1;
+    margin-bottom: 1.2rem;
+    transition: color 0.3s;
+  }
+  .impl-card:hover .impl-num { color: var(--accent); }
+  .impl-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+  }
+  .impl-body { font-size: 0.95rem; color: var(--muted); line-height: 1.7; }
+
+  /* ── BREAKTHROUGH STATEMENT ── */
+  .breakthrough {
+    background: linear-gradient(135deg, #0e1118 0%, #131720 100%);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 8vw 10vw;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .breakthrough::before {
+    content: '"';
+    position: absolute;
+    top: -2rem;
+    left: 8vw;
+    font-family: 'Playfair Display', serif;
+    font-size: 20rem;
+    color: var(--accent);
+    opacity: 0.04;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .breakthrough-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 3.5vw, 3rem);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--text);
+    max-width: 22ch;
+    margin: 0 auto;
+    position: relative;
+  }
+  .breakthrough-text em {
+    color: var(--accent);
+    font-style: normal;
+  }
+  .breakthrough-caption {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 2rem;
+  }
+
+  /* ── NAMES TABLE ── */
+  .names-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3vw;
+    margin: 3rem 0;
+  }
+  @media (max-width: 600px) { .names-grid { grid-template-columns: 1fr; } }
+
+  .names-col-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .name-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: color 0.2s;
+    cursor: default;
+  }
+  .name-item:hover { color: var(--accent); }
+  .name-item::before {
+    content: '→';
+    font-style: normal;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+  .name-item:hover::before { color: var(--accent); }
+
+  /* ── FOOTER ── */
+  .footer {
+    padding: 6vw 10vw;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 2rem;
+  }
+  @media (max-width: 600px) { .footer { grid-template-columns: 1fr; } }
+
+  .footer-author {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+  }
+  .footer-role {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .footer-disclaimer {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 40ch;
+    text-align: right;
+  }
+  @media (max-width: 600px) { .footer-disclaimer { text-align: left; } }
+
+  .footer-year {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 3rem;
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Scroll-reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* Horizontal scan lines on section */
+  .section::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    bottom: 0;
+    opacity: 0.1;
+  }
+
+  /* Steam SVG animation */
+  .steam-puff {
+    animation: steamRise 3s ease-in-out infinite;
+    transform-origin: center bottom;
+  }
+  .steam-puff:nth-child(2) { animation-delay: 1s; }
+  .steam-puff:nth-child(3) { animation-delay: 2s; }
+  @keyframes steamRise {
+    0% { opacity: 0; transform: translateY(0) scale(0.8); }
+    30% { opacity: 0.6; }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.4); }
+  }
+
+  /* Valve animation */
+  .valve-spin {
+    animation: spinValve 8s linear infinite;
+    transform-origin: 50% 50%;
+  }
+
+  @keyframes spinValve { to { transform: rotate(360deg); } }
+
+  /* PCE bar fill */
+  .bar-fill {
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+  }
+
+  /* Typewriter for tagline */
+  .typewriter {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid var(--accent);
+    animation: typing 3s steps(60, end) 1.5s both, blink 0.8s step-end infinite;
+    max-width: 100%;
+  }
+  @keyframes typing { from { width: 0; } to { width: 100%; } }
+  @keyframes blink { 50% { border-color: transparent; } }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ═══════════════════════════════════ HERO ═══════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-orb"></div>
+
+  <p class="eyebrow">Original Research Framework · 2025</p>
+
+  <h1>
+    The <span class="highlight">Ventilation<br>Valve</span><br>Effect
+  </h1>
+
+  <p class="hero-sub typewriter">
+    Why a billion digital followers can't unseat a government.
+  </p>
+
+  <div class="hero-meta">
+    <div class="author">
+      Kallol Chakrabarti
+      <span>Global Independent Researcher</span>
+    </div>
+    <div class="divider-dot"></div>
+    <div class="badge">Undocumented Prior to This</div>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <span>Scroll to Explore</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ MANIFESTO ═══════════════════════════════════ -->
+<section class="section">
+  <div class="section-label">01 — The Core Paradox</div>
+
+  <div class="manifesto-grid">
+    <div class="manifesto-body reveal">
+      <div class="section-title">Followers Consume.<br>Voters <em>Decide.</em></div>
+      <p>Congress commands 13.9 million Instagram followers. BJP holds 8.9 million. Opposition influencers accumulate tens of millions more. Yet when ballots are counted, the numbers tell an entirely different story.</p>
+      <p>This is not an anomaly. It is a system working exactly as designed — only not in the way most analysts understand.</p>
+      <p>The critical insight: people follow opposition content not to <em>change</em> their vote, but to <em>balance</em> their emotions. Digital followership is a pressure-release mechanism, not a conversion pipeline.</p>
+      <p>A BJP voter following Dhruv Rathee is not a BJP voter in transition. They are a BJP voter in equilibrium.</p>
+    </div>
+
+    <div class="pull-quote reveal">
+      "Social media does not merely spread political energy — it also <em>absorbs</em> and neutralizes it. The valve releases steam that might otherwise have built an engine."
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ STEAM DIAGRAM ═══════════════════════════════════ -->
+<section class="section equation-section">
+  <div class="section-label">02 — The Mechanism</div>
+  <div class="section-title reveal">The Democracy<br>Steam Engine</div>
+
+  <div class="diagram-wrapper reveal">
+    <svg class="steam-diagram" viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glowGold" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#e8c96d" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#e8c96d" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="boilerGrad" cx="50%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#1e2430"/>
+          <stop offset="100%" stop-color="#0e1118"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Background -->
+      <rect width="900" height="420" fill="#090b10"/>
+
+      <!-- Track -->
+      <path d="M 60 320 Q 450 320 840 320" stroke="#1e2430" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M 60 328 Q 450 328 840 328" stroke="#1e2430" stroke-width="3" fill="none"/>
+
+      <!-- BOILER (left) -->
+      <rect x="40" y="220" width="160" height="110" rx="6" fill="url(#boilerGrad)" stroke="#2a3040" stroke-width="1.5"/>
+      <text x="120" y="265" text-anchor="middle" font-family="Space Mono, monospace" font-size="8" fill="#5a6070" letter-spacing="2">SOCIAL MEDIA</text>
+      <text x="120" y="285" text-anchor="middle" font-family="Playfair Display, serif" font-size="13" fill="#d4d8e2" font-style="italic">Outrage Boiler</text>
+      <text x="120" y="305" text-anchor="middle" font-family="Space Mono, monospace" font-size="7.5" fill="#5a6070">Memes · Satire · Drama</text>
+
+      <!-- Pressure gauge -->
+      <circle cx="88" cy="235" r="14" fill="#0e1118" stroke="#2a3040" stroke-width="1.5"/>
+      <text x="88" y="239" text-anchor="middle" font-family="Space Mono, monospace" font-size="7" fill="#e8c96d">▲</text>
+      <circle cx="152" cy="235" r="14" fill="#0e1118" stroke="#2a3040" stroke-width="1.5"/>
+      <text x="152" y="239" text-anchor="middle" font-family="Space Mono, monospace" font-size="7" fill="#e8c96d">▲</text>
+
+      <!-- Steam puffs from boiler -->
+      <g class="steam-puff" opacity="0">
+        <ellipse cx="90" cy="195" rx="12" ry="8" fill="#2a3040" opacity="0.5"/>
+        <ellipse cx="105" cy="180" rx="9" ry="6" fill="#2a3040" opacity="0.3"/>
+      </g>
+      <g class="steam-puff" opacity="0">
+        <ellipse cx="120" cy="200" rx="14" ry="9" fill="#2a3040" opacity="0.5"/>
+        <ellipse cx="132" cy="183" rx="10" ry="7" fill="#2a3040" opacity="0.3"/>
+      </g>
+      <g class="steam-puff" opacity="0">
+        <ellipse cx="150" cy="192" rx="11" ry="7" fill="#2a3040" opacity="0.5"/>
+        <ellipse cx="160" cy="177" rx="8" ry="5" fill="#2a3040" opacity="0.3"/>
+      </g>
+
+      <!-- Pipe -->
+      <path d="M 200 255 L 260 255" stroke="#2a3040" stroke-width="12" stroke-linecap="round"/>
+      <path d="M 200 255 L 260 255" stroke="#1a2030" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- VALVE (center) -->
+      <circle cx="300" cy="255" r="42" fill="#0e1118" stroke="#2a3040" stroke-width="2"/>
+      <circle cx="300" cy="255" r="42" fill="url(#glowGold)" filter="url(#glow)"/>
+      <g class="valve-spin">
+        <circle cx="300" cy="255" r="30" fill="none" stroke="#e8c96d" stroke-width="1" stroke-dasharray="4 6"/>
+        <rect x="290" y="226" width="20" height="8" rx="2" fill="#e8c96d" opacity="0.7"/>
+        <rect x="290" y="281" width="20" height="8" rx="2" fill="#e8c96d" opacity="0.7"/>
+        <rect x="268" y="249" width="8" height="12" rx="2" fill="#e8c96d" opacity="0.7" transform="rotate(90 272 255)"/>
+        <rect x="322" y="249" width="8" height="12" rx="2" fill="#e8c96d" opacity="0.7" transform="rotate(90 326 255)"/>
+      </g>
+      <circle cx="300" cy="255" r="8" fill="#e8c96d" opacity="0.9"/>
+      <text x="300" y="310" text-anchor="middle" font-family="Space Mono, monospace" font-size="7.5" fill="#e8c96d" letter-spacing="1.5">PRESSURE VALVE</text>
+      <text x="300" y="324" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="10" fill="#5a6070" font-style="italic">Digital Venting Hub</text>
+
+      <!-- Steam releasing upward from valve -->
+      <g>
+        <ellipse cx="280" cy="210" rx="8" ry="5" fill="#1e2430" opacity="0.7">
+          <animate attributeName="cy" values="213;170;130" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.7;0.4;0" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="rx" values="8;14;20" dur="3s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="300" cy="205" rx="10" ry="6" fill="#1e2430" opacity="0.6">
+          <animate attributeName="cy" values="205;165;125" dur="3.5s" begin="0.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.6;0.3;0" dur="3.5s" begin="0.5s" repeatCount="indefinite"/>
+          <animate attributeName="rx" values="10;16;22" dur="3.5s" begin="0.5s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="320" cy="210" rx="7" ry="5" fill="#1e2430" opacity="0.5">
+          <animate attributeName="cy" values="210;168;128" dur="2.8s" begin="1s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.5;0.25;0" dur="2.8s" begin="1s" repeatCount="indefinite"/>
+          <animate attributeName="rx" values="7;12;18" dur="2.8s" begin="1s" repeatCount="indefinite"/>
+        </ellipse>
+      </g>
+
+      <!-- Label: released steam -->
+      <text x="300" y="115" text-anchor="middle" font-family="Space Mono, monospace" font-size="7.5" fill="#5a6070" letter-spacing="1">EMOTIONAL EXHAUST</text>
+      <text x="300" y="130" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="9.5" fill="#5a6070" font-style="italic">Venting · Scrolling · Debating</text>
+
+      <!-- Pipe to engine -->
+      <path d="M 342 255 L 440 255" stroke="#2a3040" stroke-width="12" stroke-linecap="round"/>
+      <path d="M 342 255 L 440 255" stroke="#1a2030" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- ENGINE (right) -->
+      <rect x="440" y="200" width="200" height="130" rx="6" fill="url(#boilerGrad)" stroke="#2a3040" stroke-width="1.5"/>
+      <rect x="540" y="200" width="100" height="40" rx="4" fill="#0a0d12" stroke="#2a3040" stroke-width="1"/>
+      <text x="540" y="295" text-anchor="middle" font-family="Space Mono, monospace" font-size="7.5" fill="#5a6070" letter-spacing="2">GROUND NETWORK</text>
+      <text x="540" y="313" text-anchor="middle" font-family="Playfair Display, serif" font-size="13" fill="#d4d8e2" font-style="italic">Mobilization Engine</text>
+
+      <!-- Wheels -->
+      <circle cx="500" cy="320" r="25" fill="#0e1118" stroke="#2a3040" stroke-width="2"/>
+      <circle cx="500" cy="320" r="15" fill="none" stroke="#2a3040" stroke-width="1.5" stroke-dasharray="3 5"/>
+      <circle cx="500" cy="320" r="5" fill="#e8c96d" opacity="0.5"/>
+
+      <circle cx="600" cy="320" r="25" fill="#0e1118" stroke="#2a3040" stroke-width="2"/>
+      <circle cx="600" cy="320" r="15" fill="none" stroke="#2a3040" stroke-width="1.5" stroke-dasharray="3 5"/>
+      <circle cx="600" cy="320" r="5" fill="#e8c96d" opacity="0.5"/>
+
+      <circle cx="700" cy="320" r="18" fill="#0e1118" stroke="#2a3040" stroke-width="2"/>
+      <circle cx="700" cy="320" r="10" fill="none" stroke="#2a3040" stroke-width="1.5"/>
+      <circle cx="700" cy="320" r="4" fill="#2a3040"/>
+
+      <!-- Motion lines -->
+      <line x1="750" y1="298" x2="800" y2="298" stroke="#2a3040" stroke-width="1.5"/>
+      <line x1="755" y1="310" x2="820" y2="310" stroke="#2a3040" stroke-width="1"/>
+      <line x1="750" y1="322" x2="810" y2="322" stroke="#2a3040" stroke-width="1.5"/>
+
+      <!-- VOTES destination -->
+      <text x="840" y="295" text-anchor="middle" font-family="Space Mono, monospace" font-size="8" fill="#5a6070" letter-spacing="1.5">BALLOT BOX</text>
+      <text x="840" y="312" text-anchor="middle" font-family="Playfair Display, serif" font-size="13" fill="#e8c96d" font-style="italic" filter="url(#glow)">Votes</text>
+
+      <!-- Annotation arrows -->
+      <line x1="120" y1="160" x2="120" y2="218" stroke="#2a3040" stroke-width="1" stroke-dasharray="3 4"/>
+      <text x="120" y="155" text-anchor="middle" font-family="Space Mono, monospace" font-size="7" fill="#5a6070" letter-spacing="1">HIGH PRESSURE</text>
+      <text x="120" y="145" text-anchor="middle" font-family="Space Mono, monospace" font-size="7" fill="#5a6070" letter-spacing="1">DIGITAL ANGER</text>
+    </svg>
+  </div>
+
+  <p class="reveal" style="text-align:center; font-style:italic; color:var(--muted); font-size:0.9rem; max-width:60ch; margin:0 auto;">
+    The boiler generates immense heat. The valve releases it safely upward — as engagement, memes, satire. The engine underneath, quieter and less spectacular, converts remaining energy into actual motion: votes.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════ 4-LAYER STACK ═══════════════════════════════════ -->
+<section class="section">
+  <div class="section-label">03 — The Framework</div>
+  <div class="section-title reveal">The 4-Layer Political<br>Behavior Stack</div>
+
+  <div class="layers-container">
+
+    <div class="layer-card" data-delay="0">
+      <div class="layer-num">
+        <div class="layer-num-inner">L1</div>
+        <div class="layer-line"></div>
+      </div>
+      <div class="layer-content">
+        <div class="layer-tag">Foundation</div>
+        <div class="layer-title">Identity Layer</div>
+        <div class="layer-body">The deepest, most stable layer. Determines the vast majority of voting behavior. Almost invisible on social media — it rarely tweets.</div>
+        <div class="layer-chips">
+          <span class="chip hot">Caste</span>
+          <span class="chip hot">Religion</span>
+          <span class="chip hot">Welfare Dependency</span>
+          <span class="chip">Class Mobility</span>
+          <span class="chip">Stability Preference</span>
+          <span class="chip">Nationalism</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer-card" data-delay="100">
+      <div class="layer-num">
+        <div class="layer-num-inner">L2</div>
+        <div class="layer-line"></div>
+      </div>
+      <div class="layer-content">
+        <div class="layer-tag">Pragmatic</div>
+        <div class="layer-title">Functional Layer</div>
+        <div class="layer-body">Who delivers perceived governance value. Citizens may dislike many policies yet vote for delivery of tangible outcomes.</div>
+        <div class="layer-chips">
+          <span class="chip hot">Roads & Infrastructure</span>
+          <span class="chip hot">Welfare Schemes</span>
+          <span class="chip">Inflation Tolerance</span>
+          <span class="chip">Security</span>
+          <span class="chip">Leadership Image</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer-card" data-delay="200">
+      <div class="layer-num">
+        <div class="layer-num-inner">L3</div>
+        <div class="layer-line"></div>
+      </div>
+      <div class="layer-content">
+        <div class="layer-tag">Original Insight</div>
+        <div class="layer-title">Emotional Venting Layer</div>
+        <div class="layer-body">
+          <strong style="color:var(--accent);">This is where social media lives.</strong> Users consume outrage, criticism, satire, and "truth-exposing" content — not always to change governments, but to emotionally self-correct frustration. This is the valve. It does not alter Layers 1 or 2; it releases pressure that might otherwise force action on them.
+        </div>
+        <div class="layer-chips">
+          <span class="chip hot">Outrage Content</span>
+          <span class="chip hot">Political Satire</span>
+          <span class="chip hot">Intellectual Rebellion</span>
+          <span class="chip hot">Meme Consumption</span>
+          <span class="chip">"Truth Exposé" Videos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer-card" data-delay="300">
+      <div class="layer-num">
+        <div class="layer-num-inner">L4</div>
+        <div class="layer-line"></div>
+      </div>
+      <div class="layer-content">
+        <div class="layer-tag">Surface</div>
+        <div class="layer-title">Symbolic Expression Layer</div>
+        <div class="layer-body">Likes, reposts, hashtags, comments. These create a simulation of participation. People feel politically active without materially changing anything. This is why massive digital waves routinely collapse at ballot level.</div>
+        <div class="layer-chips">
+          <span class="chip">Likes</span>
+          <span class="chip">Reposts</span>
+          <span class="chip">Hashtags</span>
+          <span class="chip">Comment Debates</span>
+          <span class="chip">Follower Growth</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ PARADIGM FLIP ═══════════════════════════════════ -->
+<section class="section">
+  <div class="section-label">04 — The Inversion</div>
+  <div class="section-title reveal">Traditional Logic<br>vs. The New Reality</div>
+
+  <div class="paradox-grid reveal">
+    <div class="paradox-cell">
+      <div class="paradox-label old">Old Paradigm</div>
+      <div class="paradox-flow">
+        <span class="flow-step">Attention</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Persuasion</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Loyalty</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Votes</span>
+      </div>
+      <p style="margin-top:1.5rem; font-size:0.95rem; color:var(--muted); line-height:1.7;">Traditional political science assumes attention flows downstream into electoral behavior. More followers meant more voters. The internet was supposed to be a conversion machine.</p>
+    </div>
+    <div class="paradox-cell">
+      <div class="paradox-label new">Ventilation Valve Model</div>
+      <div class="paradox-flow">
+        <span class="flow-step">Attention</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Venting</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Release</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step" style="color:var(--accent);">Inaction</span>
+      </div>
+      <p style="margin-top:1.5rem; font-size:0.95rem; color:var(--muted); line-height:1.7;">High engagement can actively <em>stabilize</em> incumbents instead of threatening them. Dissatisfaction that is continuously vented online is partially satisfied — reducing the psychological need for organized political action.</p>
+    </div>
+  </div>
+
+  <p class="reveal" style="margin-top:3rem; font-family:'Playfair Display',serif; font-size:1.3rem; font-style:italic; color:var(--accent); text-align:center; max-width:50ch; margin-left:auto; margin-right:auto;">
+    "High engagement can stabilize incumbents instead of threatening them." — The major inversion at the heart of this theory.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════ PCE METRIC ═══════════════════════════════════ -->
+<section class="section equation-section">
+  <div class="section-label">05 — The Metric</div>
+  <div class="section-title reveal">Political Conversion<br>Efficiency (PCE)</div>
+  <p class="reveal" style="max-width:55ch; color:var(--muted); margin-bottom:3rem;">A new quantitative framework to distinguish performative digital followership from genuine electoral mobilization. Applicable to campaigns, researchers, and analysts.</p>
+
+  <div class="pce-card reveal">
+    <div style="font-family:'Space Mono',monospace; font-size:0.65rem; letter-spacing:0.3em; color:var(--muted); text-transform:uppercase; margin-bottom:1.5rem;">The Formula</div>
+    <div class="pce-fraction">
+      <span class="pce-num" style="color:var(--text);">Real-World Political Action</span>
+      <div class="pce-bar"></div>
+      <span class="pce-den" style="color:var(--muted);">Digital Engagement Volume</span>
+    </div>
+    <div style="text-align:center; margin-top:1rem;">
+      <span style="font-family:'Space Mono',monospace; font-size:0.65rem; letter-spacing:0.3em; color:var(--accent); text-transform:uppercase;">= PCE</span>
+    </div>
+
+    <div class="pce-states">
+      <div class="pce-state">
+        <div class="pce-state-label">Low PCE</div>
+        <div class="pce-state-body">High venting, low conversion. Classic opposition influencer pattern. Spectacular metrics, negligible electoral shift.</div>
+      </div>
+      <div class="pce-state">
+        <div class="pce-state-label">High PCE</div>
+        <div class="pce-state-body">Disciplined mobilization. Quieter, less viral, but each engagement maps to a voter. BJP's WhatsApp network model.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:3rem;" class="reveal">
+    <div style="font-family:'Space Mono',monospace; font-size:0.65rem; letter-spacing:0.3em; color:var(--muted); text-transform:uppercase; margin-bottom:1.5rem;">Vent Ratio by Actor Type</div>
+
+    <div style="display:flex; flex-direction:column; gap:1.2rem;">
+
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-family:'Playfair Display',serif; font-style:italic; font-size:0.95rem;">Opposition Influencers</span>
+          <span style="font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--accent);">HIGH VENT</span>
+        </div>
+        <div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
+          <div class="bar-fill" data-width="88" style="height:100%; width:0; background: linear-gradient(90deg, #e8c96d, #c0392b); border-radius:2px;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-family:'Playfair Display',serif; font-style:italic; font-size:0.95rem;">Congress Instagram</span>
+          <span style="font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--accent);">HIGH VENT</span>
+        </div>
+        <div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
+          <div class="bar-fill" data-width="75" style="height:100%; width:0; background: linear-gradient(90deg, #e8c96d, #c0392b); border-radius:2px;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-family:'Playfair Display',serif; font-style:italic; font-size:0.95rem;">BJP WhatsApp Ecosystem</span>
+          <span style="font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--accent3);">HIGH PCE</span>
+        </div>
+        <div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
+          <div class="bar-fill" data-width="82" style="height:100%; width:0; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius:2px;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-family:'Playfair Display',serif; font-style:italic; font-size:0.95rem;">Booth-Level Ground Workers</span>
+          <span style="font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--accent3);">MAX PCE</span>
+        </div>
+        <div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
+          <div class="bar-fill" data-width="95" style="height:100%; width:0; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius:2px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ IMPLICATIONS ═══════════════════════════════════ -->
+<section class="section">
+  <div class="section-label">06 — Implications</div>
+  <div class="section-title reveal">Why This Changes<br>Campaign Strategy</div>
+
+  <div class="impl-grid reveal">
+    <div class="impl-card">
+      <div class="impl-num">01</div>
+      <div class="impl-title">The Influencer Trap</div>
+      <div class="impl-body">Figures with millions of followers mistake visibility for power. Their audiences are emotional consumers — stress relievers, hate-watchers, politically curious observers — not committed converts. Follower growth is a vanity metric.</div>
+    </div>
+    <div class="impl-card">
+      <div class="impl-num">02</div>
+      <div class="impl-title">Dual-Track Strategy</div>
+      <div class="impl-body">Smart parties run two parallel tracks: a Venting Track (Instagram/YouTube) for narrative control, and a Valve-Control Track (closed apps, ground networks) for actual vote conversion. The latter wins elections.</div>
+    </div>
+    <div class="impl-card">
+      <div class="impl-num">03</div>
+      <div class="impl-title">Algorithmic Asymmetry</div>
+      <div class="impl-body">Platforms algorithmically reward outrage. This creates a structural advantage for opposition content — which absorbs urban, English-speaking, digital-native frustration — while incumbents quietly mobilize offline.</div>
+    </div>
+    <div class="impl-card">
+      <div class="impl-num">04</div>
+      <div class="impl-title">Emotional Exhaustion Substitution</div>
+      <div class="impl-body">When citizens continuously vent online, they partially satisfy the need for resistance. The result: less organizing, less coordinated action, less turnout pressure. Digital outrage becomes democracy's shock absorber.</div>
+    </div>
+    <div class="impl-card">
+      <div class="impl-num">05</div>
+      <div class="impl-title">The Multi-Homing Problem</div>
+      <div class="impl-body">Users follow everyone. A single person may follow BJP, Congress, Dhruv Rathee, and NDTV simultaneously. Raw follower counts are vanity metrics hiding divided loyalty and low commitment across the entire count.</div>
+    </div>
+    <div class="impl-card">
+      <div class="impl-num">06</div>
+      <div class="impl-title">Prediction Power</div>
+      <div class="impl-body">Watch which side owns the valve (captures venting) versus who owns the engine (converts mobilization). The side with quieter but denser organizational depth — the engine — wins elections.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ BREAKTHROUGH ═══════════════════════════════════ -->
+<section class="breakthrough">
+  <p class="breakthrough-text">
+    Social media does not merely <em>spread</em> political energy.<br>
+    It also <em>absorbs</em> and neutralizes it.
+  </p>
+  <p class="breakthrough-caption">— The Single Sentence That Makes This Original</p>
+</section>
+
+<!-- ═══════════════════════════════════ NAMES ═══════════════════════════════════ -->
+<section class="section">
+  <div class="section-label">07 — Nomenclature</div>
+  <div class="section-title reveal">Academic & Popular<br>Names for the Theory</div>
+
+  <div class="names-grid reveal">
+    <div>
+      <div class="names-col-title">Academic Names</div>
+      <div class="name-item">Compensatory Political Consumption Theory</div>
+      <div class="name-item">Digital Venting Stabilization Model</div>
+      <div class="name-item">Emotional Pressure Valve Theory</div>
+      <div class="name-item">Parallel Political Behavior Framework</div>
+      <div class="name-item">Emotional Exhaustion Democracy Model</div>
+      <div class="name-item">Political Conversion Efficiency Framework</div>
+    </div>
+    <div>
+      <div class="names-col-title">Popular Names</div>
+      <div class="name-item">The Ventilation Valve Effect</div>
+      <div class="name-item">The Pressure Valve Effect</div>
+      <div class="name-item">The Steam Engine Theory of Politics</div>
+      <div class="name-item">Ventocracy</div>
+      <div class="name-item">The Venting Voter Model</div>
+      <div class="name-item">Followers ≠ Voters Theory</div>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-top:3rem; padding:2.5rem; border:1px solid var(--border); background:var(--bg2); max-width:700px;">
+    <div style="font-family:'Space Mono',monospace; font-size:0.6rem; letter-spacing:0.3em; color:var(--accent); text-transform:uppercase; margin-bottom:1rem;">Disciplinary Intersections</div>
+    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+      <span class="chip hot">Political Psychology</span>
+      <span class="chip hot">Behavioral Economics</span>
+      <span class="chip hot">Systems Theory</span>
+      <span class="chip hot">Media Theory</span>
+      <span class="chip">Digital Sociology</span>
+      <span class="chip">Democratic Stability Research</span>
+      <span class="chip">Algorithmic Behavior Science</span>
+      <span class="chip">Electoral Studies</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ FOOTER ═══════════════════════════════════ -->
+<footer class="footer">
+  <div>
+    <div class="footer-author">Kallol Chakrabarti</div>
+    <div class="footer-role">Global Independent Researcher</div>
+    <p style="margin-top:1.2rem; font-size:0.9rem; color:var(--muted); max-width:45ch; line-height:1.7;">
+      This framework — the Ventilation Valve Effect / Compensatory Political Consumption Theory — represents an original conceptual contribution to political sociology and digital behavioral research. It has not been previously documented in this form.
+    </p>
+  </div>
+  <div class="footer-disclaimer">
+    The theory is presented analytically and without partisan intent. Examples are illustrative of structural dynamics, not endorsements or criticisms of any political entity.
+  </div>
+
+  <div class="footer-year">
+    <span>© 2025 Kallol Chakrabarti · All Rights Reserved</span>
+    <span style="font-style:italic; font-family:'Cormorant Garamond',serif; font-size:0.8rem;">
+      "Followers are not supporters. Many are emotional consumers."
+    </span>
+  </div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animateCursor() {
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+
+  // Intersection Observer for reveals
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Layer cards staggered reveal
+  const layerObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const delay = parseInt(entry.target.dataset.delay || '0');
+        setTimeout(() => entry.target.classList.add('visible'), delay);
+      }
+    });
+  }, { threshold: 0.2 });
+  document.querySelectorAll('.layer-card').forEach(el => layerObserver.observe(el));
+
+  // Bar fill animation on scroll
+  const barObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll('.bar-fill').forEach(bar => {
+          const w = bar.dataset.width;
+          bar.style.width = w + '%';
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.reveal').forEach(el => barObserver.observe(el));
+
+  // Also trigger bars when their parent reveal becomes visible
+  const allBars = document.querySelectorAll('.bar-fill');
+  const parentObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const bars = entry.target.querySelectorAll('.bar-fill');
+        if (bars.length) {
+          bars.forEach((bar, i) => {
+            setTimeout(() => {
+              bar.style.width = bar.dataset.width + '%';
+            }, i * 200);
+          });
+        }
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('section').forEach(s => parentObserver.observe(s));
+
+  // Cursor enlarge on hover of interactive elements
+  document.querySelectorAll('a, .impl-card, .paradox-cell, .name-item, .layer-card').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      ring.style.width = '60px';
+      ring.style.height = '60px';
+      ring.style.opacity = '0.8';
+    });
+    el.addEventListener('mouseleave', () => {
+      ring.style.width = '36px';
+      ring.style.height = '36px';
+      ring.style.opacity = '0.5';
+    });
+  });
+</script>
+</body>
+</html>
