@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://followers-not-voters.vercel.app/sitemap.xml
+
+# Project
+# HelixOriginator
+# followers-not-voters
